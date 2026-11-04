@@ -15,3 +15,4 @@ Open http://localhost:8000 and press **Start tuner**.
 ## Test
 
     node tests/detect.test.js
+    node tests/sweep.test.js

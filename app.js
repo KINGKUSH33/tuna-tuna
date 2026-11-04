@@ -60,7 +60,30 @@
     return { string: best, index: idx, cents: 1200 * Math.log2(freq / best.f) };
   }
 
-  const api = { detectPitch, nearestString, STRINGS };
+  // Pure sweep tracker. Feed frames {index, cents, t(ms)}; index null = silence.
+  // A string is confirmed after holding |cents|<=tol for holdMs. Six distinct within windowMs = success.
+  function newSweep() { return { confirmed: [], start: null, cand: null, candSince: 0 }; }
+  function sweepStep(st, f, opts) {
+    opts = opts || {};
+    const tol = opts.tol != null ? opts.tol : 5, holdMs = opts.holdMs || 150, windowMs = opts.windowMs || 8000;
+    st = { confirmed: st.confirmed.slice(), start: st.start, cand: st.cand, candSince: st.candSince };
+    let event = null;
+    if (st.start != null && f.t - st.start > windowMs) { st = newSweep(); event = 'reset'; }
+    const ok = f.index != null && Math.abs(f.cents) <= tol;
+    if (!ok) { st.cand = null; return { state: st, event }; }
+    if (st.cand !== f.index) { st.cand = f.index; st.candSince = f.t; }
+    if (f.t - st.candSince >= holdMs && st.confirmed.indexOf(f.index) < 0) {
+      if (st.start == null) st.start = f.t;
+      st.confirmed.push(f.index); event = 'confirm';
+      if (st.confirmed.length === 6) {
+        const ordered = st.confirmed.every((v, i) => v === i);
+        return { state: newSweep(), event: 'success', ordered, confirmed: st.confirmed };
+      }
+    }
+    return { state: st, event };
+  }
+
+  const api = { detectPitch, nearestString, STRINGS, newSweep, sweepStep };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Needle = api;
   if (typeof document === 'undefined') return;
@@ -97,7 +120,26 @@
     vel += (kSpring * (target - angle) - damp * vel) * dt; angle += vel * dt;
     $('needle').setAttribute('transform', 'rotate(' + angle.toFixed(2) + ' 250 250)');
     if (performance.now() - lastHit > 600) { target = 0; smoothCents = null; idle(); }
+    if (sweep.start != null && performance.now() - sweep.start > 8000) { sweep = newSweep(); paintSweep(); }
     requestAnimationFrame(animate);
+  }
+  let sweep = newSweep(), celebrating = false;
+  function paintSweep() {
+    document.querySelectorAll('.string').forEach((e, i) => e.classList.toggle('done', sweep.confirmed.indexOf(i) >= 0));
+  }
+  function celebrate(ordered) {
+    if (celebrating) return; celebrating = true;
+    const c = $('celebrate');
+    $('celebrate-sub').textContent = ordered ? 'Low to high, clean sweep' : 'Clean sweep';
+    document.querySelectorAll('.string').forEach(e => e.classList.add('done'));
+    c.classList.remove('show'); void c.offsetWidth; c.classList.add('show');
+    setTimeout(() => { c.classList.remove('show'); celebrating = false; paintSweep(); }, 2800);
+  }
+  function feedSweep(index, cents) {
+    const r = sweepStep(sweep, { index, cents, t: performance.now() });
+    sweep = r.state;
+    if (r.event === 'success') celebrate(r.ordered);
+    if (r.event) paintSweep();
   }
   function idle() {
     $('note').innerHTML = '&ndash;'; $('cents').textContent = '— ¢'; $('hz').textContent = '— Hz';
@@ -114,6 +156,7 @@
     $('hz').textContent = res.freq.toFixed(2) + ' Hz';
     document.body.classList.toggle('intune', Math.abs(smoothCents) <= 5);
     document.querySelectorAll('.string').forEach((e, i) => e.classList.toggle('active', i === ns.index));
+    feedSweep(ns.index, smoothCents);
   }
 
   async function start() {
@@ -129,7 +172,7 @@
       setInterval(() => {
         an.getFloatTimeDomainData(buf);
         const r = detectPitch(buf, ctx.sampleRate, { rmsThreshold: 0.008, clarityThreshold: 0.85 });
-        if (r) show(r);
+        if (r) show(r); else feedSweep(null, 0);
       }, 50);
     } catch (e) {
       $('status').textContent = 'Microphone unavailable: ' + e.message + ' (needs localhost/https and permission).';
