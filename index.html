@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tuna Tuna — Guitar Tuner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head><body>
+<main>
+  <header><h1>Tuna Tuna</h1><p class="kicker">Analog tuner &middot; Standard E</p></header>
+  <section class="meter">
+    <svg viewBox="0 0 500 300" aria-label="Tuning meter">
+      <defs>
+        <linearGradient id="steel" x1="0" x2="1"><stop offset="0" stop-color="#8d9098"/><stop offset=".5" stop-color="#f2f2f0"/><stop offset="1" stop-color="#9a9da5"/></linearGradient>
+        <radialGradient id="hub"><stop offset="0" stop-color="#f2f2f0"/><stop offset="1" stop-color="#6c6f76"/></radialGradient>
+      </defs>
+      <path class="arc" d="M 76.8 150 A 200 200 0 0 1 423.2 150"/>
+      <path class="zone" d="M 237.5 51.6 A 200 200 0 0 1 262.5 51.6"/>
+      <g id="ticks"></g>
+      <text x="250" y="200" class="flat-sharp">♭ &nbsp; cents &nbsp; ♯</text>
+      <g id="needle"><polygon points="248,250 252,250 250.4,58 249.6,58" fill="url(#steel)"/></g>
+      <circle cx="250" cy="250" r="11" fill="url(#hub)"/><circle cx="250" cy="250" r="3" fill="#0a0a0b"/>
+    </svg>
+  </section>
+  <section class="readout">
+    <div id="note" class="note">&ndash;</div>
+    <div class="nums"><span id="cents">— ¢</span><span id="hz">— Hz</span></div>
+    <div class="intune-ind"><span class="lamp"></span>In tune</div>
+  </section>
+  <div id="strings" class="strings"></div>
+  <button id="start">Start tuner</button>
+  <p id="status" class="status">Microphone access required.</p>
+</main>
+<script src="app.js"></script>
+</body></html>
