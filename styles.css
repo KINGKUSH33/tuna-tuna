@@ -247,6 +247,47 @@ body.intune .chip.active{border-color:var(--led);color:var(--led);box-shadow:ins
   #note-name{font-size:clamp(64px,18vw,108px)}
   .meter{padding-bottom:10px}
 }
+.foot{display:flex;justify-content:center;align-items:center;gap:18px;margin-top:-6px}
+.tip{
+  appearance:none;background:transparent;border:0;color:var(--dim);cursor:pointer;touch-action:manipulation;
+  font:600 12px var(--mono);letter-spacing:.08em;padding:8px 2px;min-height:40px;
+}
+.privacy-link{color:var(--dim);font:600 12px var(--mono);letter-spacing:.08em;text-decoration:none;padding:8px 2px}
+.tip:hover,.tip:focus-visible{color:var(--gold)}
+.privacy-link:hover,.privacy-link:focus-visible{color:var(--steel)}
+
+.modal{
+  position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center;
+  padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom));background:#07080bd6;
+}
+.modal[hidden]{display:none}
+.modal-card{
+  width:min(460px,100%);display:grid;gap:14px;padding:22px 20px 18px;border-radius:20px;
+  background:linear-gradient(180deg,#161b24,#10141c);border:1px solid var(--line);
+  box-shadow:inset 0 1px 0 #ffffff14,0 28px 70px #000c;
+}
+.modal-card h2{font-family:var(--serif);font-weight:500;font-size:clamp(28px,7vw,34px);letter-spacing:.01em}
+.modal-card p{color:var(--steel);font-size:16px;line-height:1.5}
+#mic-disclosure-copy{color:var(--paper);font-size:18px;line-height:1.45}
+#tip-soon{color:var(--gold);font:13px/1.45 var(--mono)}
+#tip-soon[hidden]{display:none}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.modal-actions .ghost,.modal-actions .primary{
+  min-height:46px;padding:0 16px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+}
+.modal-actions .primary[hidden],.modal-actions .ghost[hidden]{display:none}
+
+.legal{gap:18px}
+.legal h2{font-family:var(--serif);font-weight:500;font-size:clamp(32px,8vw,46px)}
+.legal h3{font-family:var(--serif);font-weight:500;font-size:22px;margin-top:8px}
+.legal p,.legal li{color:var(--steel);font-size:16px;line-height:1.6}
+.legal ul{display:grid;gap:8px;padding-left:1.15em}
+.legal a{color:var(--led)}
+.legal .updated{font:12px var(--mono);color:var(--dim);letter-spacing:.04em}
+
+@media (min-width:800px){
+  .modal{align-items:center}
+}
 @media (prefers-reduced-motion:reduce){
   *{transition:none!important}
   .primary.on::before,.celebrate.show .celebrate-text,.celebrate.show .celebrate-sub,body.intune .lamp.center,body.intune .zone{animation:none}

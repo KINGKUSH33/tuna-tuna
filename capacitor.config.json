@@ -1,0 +1,11 @@
+{
+  "appId": "com.kingkush33.tunatuna",
+  "appName": "Tuna Tuna",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

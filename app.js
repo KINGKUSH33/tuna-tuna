@@ -1,4 +1,4 @@
-/* Tuna Tuna v3 Pro — studio guitar tuner. McLeod Pitch Method (NSDF) in plain JS. */
+/* Tuna Tuna v3.1 — studio guitar tuner. McLeod Pitch Method (NSDF) in plain JS. */
 (function (root) {
   'use strict';
 
@@ -7,6 +7,30 @@
   // Raw guitar: phone voice processing (echo cancel, noise suppression, AGC)
   // chokes a ringing string and is the main reason plucks feel late or die early.
   const MIC_CONSTRAINTS = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+  // Shown in full before the first microphone prompt. Google Play requires this
+  // prominent disclosure for RECORD_AUDIO, ahead of the system permission.
+  const MIC_DISCLOSURE_TEXT = 'Tuna Tuna uses your microphone only in real time on your device to detect pitch. Audio is never recorded, saved, or sent anywhere.';
+  const TIP_JAR_EXPLAIN = 'Tuna Tuna is 100% free with every feature unlocked. Optional tips go directly to the creator and unlock nothing.';
+  const TIP_JAR_SOON = 'The tip link is coming soon.';
+
+  function resolveTipJarUrl(value) {
+    const url = String(value == null ? '' : value).trim();
+    if (!url) return '';
+    let parsed;
+    try { parsed = new URL(url); } catch (e) { return ''; }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+    if (!parsed.hostname) return '';
+    return parsed.href;
+  }
+
+  function micAccessMessage(err) {
+    const name = err && err.name;
+    if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') {
+      return 'Microphone access was denied. ' + MIC_DISCLOSURE_TEXT + ' Allow microphone access and try again.';
+    }
+    const detail = err && err.message ? err.message : 'unknown error';
+    return 'Microphone unavailable: ' + detail + '. Allow mic access and try again.';
+  }
   const REFERENCE_PLAY_MS = 1450, REFERENCE_TAIL_MS = 400;
   const SWEEP_HOLD_MS = 40, SWEEP_WINDOW_MS = 20000;
   const SPLAT_COLORS = ['#7dca8e', '#6fb383', '#5aa872', '#e7a75b', '#f0c45c', '#d4923a', '#ee7a5f', '#e06c5c', '#f09580', '#5eb7e5', '#7ec8ea', '#4aa3d8'];
@@ -275,7 +299,8 @@
     STRINGS, TUNINGS, NOTE_NAMES, A4_MIN, A4_MAX, IN_TUNE_CENTS, MIN_FREQ, MAX_FREQ, MIC_CONSTRAINTS,
     newSweep, sweepStep, SWEEP_HOLD_MS, SWEEP_WINDOW_MS,
     referenceFreq, referenceMuteMs, REFERENCE_PLAY_MS, REFERENCE_TAIL_MS,
-    formatCents, signalRms, meterLevel
+    formatCents, signalRms, meterLevel,
+    resolveTipJarUrl, micAccessMessage, MIC_DISCLOSURE_TEXT, TIP_JAR_EXPLAIN, TIP_JAR_SOON
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.Needle = api;
@@ -693,10 +718,76 @@
   const tracker = createTracker();
   let running = false, noiseFloor = null;
 
+  function showModal(id) {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = false;
+    const focus = el.querySelector('[data-autofocus], button, a');
+    if (focus && focus.focus) focus.focus();
+  }
+  function hideModal(id) {
+    const el = $(id);
+    if (el) el.hidden = true;
+  }
+  function disclosureAccepted() {
+    return store.get('micDisclosure', '') === 'accepted';
+  }
+  function openExternal(url) {
+    const native = root.TunaNative;
+    if (native && typeof native.openExternal === 'function') {
+      native.openExternal(url);
+      return;
+    }
+    if (typeof root.open === 'function') {
+      const child = root.open(url, '_blank', 'noopener,noreferrer');
+      if (child) { try { child.opener = null; } catch (e) {} }
+    }
+  }
+  function ensureNativeMic() {
+    const native = root.TunaNative;
+    if (!native || typeof native.ensureRecordAudio !== 'function') return Promise.resolve(true);
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = ok => { if (settled) return; settled = true; resolve(!!ok); };
+      root.__tunaMicResult = finish;
+      try { native.ensureRecordAudio(); } catch (e) { finish(false); }
+    });
+  }
+  function syncTipModal() {
+    const url = resolveTipJarUrl(root.TIP_JAR_URL);
+    const soon = $('tip-soon');
+    const open = $('tip-open');
+    const copy = $('tip-copy');
+    if (copy) copy.textContent = TIP_JAR_EXPLAIN;
+    if (soon) {
+      soon.hidden = !!url;
+      soon.textContent = TIP_JAR_SOON;
+    }
+    if (open) {
+      if (url) {
+        open.hidden = false;
+        open.href = url;
+        open.target = '_blank';
+        open.rel = 'noopener noreferrer';
+      } else {
+        open.hidden = true;
+        open.removeAttribute('href');
+      }
+    }
+  }
+
   async function openMic() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const err = new Error('This browser has no microphone API.');
+      err.name = 'NotFoundError';
+      throw err;
+    }
     const exact = { audio: MIC_CONSTRAINTS };
     try { return await navigator.mediaDevices.getUserMedia(exact); }
     catch (e) {
+      const name = e && e.name;
+      // A denied prompt must not be asked again under looser constraints.
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') throw e;
       return navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: { ideal: false },
@@ -707,9 +798,24 @@
     }
   }
   async function start() {
+    if (!disclosureAccepted()) {
+      showModal('mic-disclosure');
+      return;
+    }
+    await beginListening();
+  }
+  async function beginListening() {
     const btn = $('start');
     try {
       btn.disabled = true; btn.textContent = 'Starting…';
+      if (root.TunaNative && typeof root.TunaNative.ensureRecordAudio === 'function') {
+        const allowed = await ensureNativeMic();
+        if (!allowed) {
+          const denied = new Error('Permission denied');
+          denied.name = 'NotAllowedError';
+          throw denied;
+        }
+      }
       // Resume in the click turn so iOS will actually start the audio graph.
       const ctx = getAudio();
       const resumed = ctx.resume ? ctx.resume() : Promise.resolve();
@@ -759,7 +865,7 @@
       }, 32);
     } catch (e) {
       btn.disabled = false; btn.textContent = 'Start tuner';
-      $('status').textContent = 'Microphone unavailable: ' + e.message + '. Allow mic access and try again.';
+      $('status').textContent = micAccessMessage(e);
     }
   }
 
@@ -777,13 +883,51 @@
     }
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function boot() {
     buildGauge();
     setA4(a4);
     setTuning(tuningId);
     setMode(mode);
     idle();
+    const disclosure = $('mic-disclosure-copy');
+    if (disclosure) disclosure.textContent = MIC_DISCLOSURE_TEXT;
+    syncTipModal();
     $('start').addEventListener('click', start);
+    const acceptMic = $('mic-disclosure-accept');
+    const cancelMic = $('mic-disclosure-cancel');
+    if (acceptMic) acceptMic.addEventListener('click', () => {
+      store.set('micDisclosure', 'accepted');
+      hideModal('mic-disclosure');
+      start();
+    });
+    if (cancelMic) cancelMic.addEventListener('click', () => {
+      hideModal('mic-disclosure');
+      const startBtn = $('start');
+      if (startBtn && startBtn.focus) startBtn.focus();
+    });
+    const tipBtn = $('tip');
+    if (tipBtn) tipBtn.addEventListener('click', () => { syncTipModal(); showModal('tip-modal'); });
+    const tipClose = $('tip-close');
+    if (tipClose) tipClose.addEventListener('click', () => hideModal('tip-modal'));
+    const tipOpen = $('tip-open');
+    if (tipOpen) tipOpen.addEventListener('click', e => {
+      const url = resolveTipJarUrl(root.TIP_JAR_URL);
+      e.preventDefault();
+      if (!url) return;
+      openExternal(url);
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      const mic = $('mic-disclosure');
+      const tip = $('tip-modal');
+      if (mic && !mic.hidden) hideModal('mic-disclosure');
+      else if (tip && !tip.hidden) hideModal('tip-modal');
+    });
+    ['mic-disclosure', 'tip-modal'].forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener('click', e => { if (e.target === el) hideModal(id); });
+    });
     $('a4').addEventListener('input', e => setA4(e.target.value));
     $('a4-down').addEventListener('click', () => setA4(a4 - 1));
     $('a4-up').addEventListener('click', () => setA4(a4 + 1));
@@ -800,7 +944,9 @@
       deferredPrompt = null;
       $('install').hidden = true;
     });
-    requestAnimationFrame(animate);
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(animate);
     if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })(typeof globalThis !== 'undefined' ? globalThis : this);

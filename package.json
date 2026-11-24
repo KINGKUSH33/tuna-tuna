@@ -1,8 +1,21 @@
 {
   "name": "tuna-tuna",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "private": true,
   "scripts": {
-    "test": "node tests/detect.test.js && node tests/sweep.test.js && node tests/precision.test.js && node tests/v3.test.js"
+    "test": "node tests/detect.test.js && node tests/sweep.test.js && node tests/precision.test.js && node tests/v3.test.js && node tests/policy.test.js && node tests/package.test.js",
+    "build:web": "node scripts/build-web.js",
+    "cap:sync": "npm run build:web && npx cap sync android"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
+    "jsdom": "^31.0.1"
   }
 }
