@@ -1,28 +1,38 @@
 # Tuna Tuna
 
-An analog-style guitar tuner for the browser (standard E: E2 A2 D3 G3 B3 E4). Pitch detection runs locally from your microphone using the Web Audio API and a plain-JS McLeod Pitch Method (NSDF, key-maxima peak picking, parabolic interpolation), with an RMS noise gate and a clarity threshold. No build step, no libraries.
+A studio guitar tuner for the browser. Pitch detection runs on your microphone with the Web Audio API and a plain-JS McLeod Pitch Method (NSDF, key-maxima peak picking, parabolic interpolation). No build step, no libraries. Paths are relative so it serves from GitHub Pages at `/tuna-tuna/`.
 
 ## Run
 
-    cd needle && python3 -m http.server 8000
-    # or: npx serve
+```
+python3 -m http.server 8000
+```
 
 Open http://localhost:8000 and press **Start tuner**.
 
 - `getUserMedia` only works on **localhost or HTTPS**.
 - **Microphone permission is required**; the browser will prompt.
+- The tuner asks for raw guitar audio: echo cancellation, noise suppression, and auto gain are off.
 
 ## Test
 
-    npm test
+```
+npm test
+```
 
-## v2
-- Installable PWA (manifest + offline service worker), relative paths for GitHub Pages `/tuna-tuna/`.
-- Precision: parabolic-interpolated MPM, median + adaptive EMA smoothing, octave-glitch rejection, adaptive noise gate, 55 Hz high-pass, adjustable A4 (432–446 Hz, saved), ±3¢ in-tune zone.
-- UI: coloured gauge with spring needle, tune up/down hints, Auto or locked string selection, haptic buzz when in tune, screen-reader announcements.
-- Tests: `npm test`
+## v3 Pro
+
+- Instant pluck pickup and a hysteresis gate so a ringing string stays tracked as it gets quiet, then a short display hold as it fades. Live mic level meter.
+- Studio pitch from about 55 Hz through 1200 Hz, within ±1 cent, including wound low strings with strong 2nd/3rd harmonics. Needle runs at display rate. Cents read like `+1.4¢`. A4 is adjustable from 432–446 Hz and saved.
+- Guitar mode: Standard, Drop D, Half-Step Down, Open G, DADGAD, Auto or locked strings, and the six-string sage/gold/coral/sky sweep.
+- Chromatic mode: all 12 pitch classes and the octave.
+- Plucked reference tone per string (and for the chromatic note), using the chosen A4. The mic is ignored while the tone plays, plus a short tail.
+- Service worker cache `tuna-tuna-v3`, so a refresh replaces v2.1.
 
 ## v2.1
-- Cleaner UI: larger note and direction pill (Tune up / Tune down / In tune), six easy-tap string buttons with sweep progress lights, Auto-detect tucked into the row header, A4 still in a compact settings pill.
-- Steadier pitch: lower 62 Hz floor so a flat E2 still reads, 3×-lag octave correction for harmonic-rich low strings, 3-frame jump confirmation, slightly calmer EMA, clarity 0.84 on brief plucks, longer FFT at high sample rates.
-- Easier six-string celebration: a brief in-tune pluck counts, the 20s window rolls forward on each new string, and a colorful sage/gold/coral/sky paint-splatter burst says “All six strings in tune!”.
+
+- Cleaner stage UI, 62 Hz floor, octave correction, rolling 20s six-string celebration.
+
+## v2
+
+- Installable PWA, median + EMA smoothing, adaptive noise gate, ±3¢ in-tune zone.

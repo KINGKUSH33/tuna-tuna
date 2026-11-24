@@ -1,18 +1,15 @@
 {
-  "name": "Tuna Tuna",
+  "name": "Tuna Tuna Pro",
   "short_name": "Tuna Tuna",
-  "description": "A fast, precise guitar tuner that works offline.",
+  "description": "Studio guitar tuner with chromatic mode, alternate tunings, and reference tones. Works offline.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b0d10",
-  "theme_color": "#0b0d10",
-  "categories": [
-    "music",
-    "utilities"
-  ],
+  "background_color": "#07080b",
+  "theme_color": "#07080b",
+  "categories": ["music", "utilities"],
   "icons": [
     {
       "src": "icons/icon.svg",
