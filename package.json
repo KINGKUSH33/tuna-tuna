@@ -1,0 +1,2 @@
+{ "name": "tuna-tuna", "version": "2.1.0", "private": true,
+  "scripts": { "test": "node tests/detect.test.js && node tests/sweep.test.js && node tests/precision.test.js" } }

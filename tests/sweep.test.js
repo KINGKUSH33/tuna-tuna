@@ -1,4 +1,4 @@
-const { newSweep, sweepStep } = require('../app.js');
+const { newSweep, sweepStep, SWEEP_HOLD_MS, SWEEP_WINDOW_MS } = require('../app.js');
 let fail = 0;
 const check = (name, ok) => { console.log(`${ok ? 'PASS' : 'FAIL'} ${name}`); if (!ok) fail++; };
 function play(order, gap, cents = 1, hold = 200) {
@@ -17,8 +17,26 @@ r = play([0,1,2,3,4,5], 300, 8);
 check('out of tune (8c) does not count', !r.last && r.st.confirmed.length === 0);
 r = play([0,0,1,1,2,3,4], 200);
 check('repeats count once, 5 distinct no success', !r.last && r.st.confirmed.length === 5);
-r = play([0,1,2,3,4,5], 2000);
-check('window over 8s resets, no success', !r.last);
-let st = newSweep(); st = sweepStep(st, { index: 2, cents: 0, t: 0 }).state; st = sweepStep(st, { index: 2, cents: 0, t: 100 }).state;
-check('held under 150ms not confirmed', st.confirmed.length === 0);
+r = play([0,1,2,3,4,5], 2500);
+check('rolling 20s window allows relaxed 2.5s gaps', r.last && r.last.ordered === true);
+r = play([0,1,2,3,4,5], SWEEP_WINDOW_MS + 1000);
+check('gap over 20s since last string resets, no success', !r.last);
+let st = newSweep();
+st = sweepStep(st, { index: 2, cents: 0, t: 0 }).state;
+st = sweepStep(st, { index: 2, cents: 0, t: SWEEP_HOLD_MS }).state;
+check('brief ' + SWEEP_HOLD_MS + 'ms in-tune pluck is confirmed', st.confirmed.length === 1);
+st = newSweep();
+st = sweepStep(st, { index: 2, cents: 0, t: 0 }).state;
+st = sweepStep(st, { index: 2, cents: 0, t: SWEEP_HOLD_MS - 10 }).state;
+check('held under ' + SWEEP_HOLD_MS + 'ms not confirmed', st.confirmed.length === 0);
+// Rolling window: 19s after string 0, string 1 still counts; then a 21s wait resets.
+st = newSweep();
+st = sweepStep(st, { index: 0, cents: 0, t: 0 }).state;
+st = sweepStep(st, { index: 0, cents: 0, t: SWEEP_HOLD_MS }).state;
+st = sweepStep(st, { index: 1, cents: 0, t: 19000 }).state;
+st = sweepStep(st, { index: 1, cents: 0, t: 19000 + SWEEP_HOLD_MS }).state;
+check('rolling timer: 19s later still confirms next string', st.confirmed.length === 2 && st.confirmed[1] === 1);
+st = sweepStep(st, { index: 2, cents: 0, t: 19000 + SWEEP_HOLD_MS + 21000 }).state;
+check('rolling timer: 21s later resets progress', st.confirmed.length === 0);
+check('defaults are a brief hold and a 20s rolling window', SWEEP_HOLD_MS === 40 && SWEEP_WINDOW_MS === 20000);
 process.exit(fail ? 1 : 0);
