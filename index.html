@@ -2,9 +2,9 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Tuna Tuna — Guitar Tuner</title>
-<meta name="description" content="Tuna Tuna: a fast, precise guitar tuner that works offline. Standard tuning, auto string detection, adjustable A4.">
-<meta name="theme-color" content="#0b0d10">
+<title>Tuna Tuna — Pro Tuner</title>
+<meta name="description" content="Tuna Tuna Pro: a studio guitar tuner with chromatic mode, alternate tunings, and reference tones. Works offline.">
+<meta name="theme-color" content="#07080b">
 <meta name="color-scheme" content="dark">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -17,7 +17,10 @@
 </head><body>
 <main>
   <header>
-    <div class="brand"><img src="icons/icon.svg" alt="" width="34" height="34"><h1>Tuna Tuna</h1></div>
+    <div class="brand">
+      <img src="icons/icon.svg" alt="" width="36" height="36">
+      <h1>Tuna Tuna <span class="badge">Pro</span></h1>
+    </div>
     <details class="settings">
       <summary id="a4-pill" aria-label="Reference pitch settings">A4 440 Hz</summary>
       <div class="panel">
@@ -32,40 +35,58 @@
     </details>
   </header>
 
+  <div class="modes" role="group" aria-label="Tuner mode">
+    <button type="button" id="mode-guitar" aria-pressed="true">Guitar</button>
+    <button type="button" id="mode-chromatic" aria-pressed="false">Chromatic</button>
+  </div>
+
   <section class="card meter" aria-label="Tuning meter">
+    <div class="meter-top">
+      <span id="meter-kicker">Standard E</span>
+      <div class="mic">
+        <span class="mic-label">Mic</span>
+        <div id="level" class="level" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Microphone level"></div>
+      </div>
+    </div>
     <svg viewBox="0 0 500 290" role="img" aria-labelledby="meter-title">
-      <title id="meter-title">Needle gauge from 50 cents flat to 50 cents sharp</title>
+      <title id="meter-title">Tuning arc from 50 cents flat to 50 cents sharp</title>
       <defs>
-        <linearGradient id="steel" x1="0" x2="1"><stop offset="0" stop-color="#9aa0aa"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#9aa0aa"/></linearGradient>
-        <radialGradient id="hub"><stop offset="0" stop-color="#f4f5f2"/><stop offset="1" stop-color="#5e626b"/></radialGradient>
-        <radialGradient id="glow" cx=".5" cy="1" r=".7"><stop offset="0" stop-color="#8fd0a0" stop-opacity=".35"/><stop offset="1" stop-color="#8fd0a0" stop-opacity="0"/></radialGradient>
+        <linearGradient id="steel" x1="0" x2="1"><stop offset="0" stop-color="#9aa3b2"/><stop offset=".5" stop-color="#ffffff"/><stop offset="1" stop-color="#9aa3b2"/></linearGradient>
+        <radialGradient id="hub"><stop offset="0" stop-color="#f7f8f5"/><stop offset="1" stop-color="#3d4450"/></radialGradient>
       </defs>
-      <rect class="glow" x="0" y="0" width="500" height="290" fill="url(#glow)"/>
       <g id="band"></g>
       <g id="ticks"></g>
-      <text x="92" y="276" class="flat-sharp">♭ flat</text>
-      <text x="408" y="276" class="flat-sharp">sharp ♯</text>
-      <g id="needle"><polygon points="246.5,262 253.5,262 250.6,44 249.4,44" fill="url(#steel)"/><circle cx="250" cy="44" r="3.2" class="needle-tip"/></g>
-      <circle cx="250" cy="250" r="13" fill="url(#hub)"/><circle cx="250" cy="250" r="3.5" fill="#0b0d10"/>
+      <text x="78" y="278" class="flat-sharp">Tune up</text>
+      <text x="422" y="278" class="flat-sharp">Tune down</text>
+      <g id="needle"><polygon points="246.5,262 253.5,262 250.55,42 249.45,42" fill="url(#steel)"/><circle cx="250" cy="42" r="3.4" class="needle-tip"/></g>
+      <circle cx="250" cy="250" r="13" fill="url(#hub)"/><circle cx="250" cy="250" r="3.5" fill="#07080b"/>
     </svg>
     <div class="readout">
-      <div id="note" class="note" aria-hidden="true">&ndash;</div>
+      <div class="lamps" aria-hidden="true"><span class="lamp flat"></span><span class="lamp center"></span><span class="lamp sharp"></span></div>
+      <div id="note" class="note"><span id="note-name">–</span><span id="note-oct" hidden></span></div>
       <div id="dir" class="dir">Tap start, then pluck a string</div>
-      <div class="nums"><span id="cents">— ¢</span><span class="dot">·</span><span id="hz">— Hz</span></div>
+      <div class="nums"><span id="cents">—</span><span id="hz">— Hz</span></div>
     </div>
   </section>
 
-  <section class="strings-wrap" aria-label="String selection">
+  <section id="guitar-panel" class="panel-block" aria-label="Guitar tuning">
     <div class="row-head">
-      <span>Standard E</span>
-      <button type="button" id="auto" class="mode-toggle" aria-pressed="true">Auto-detect</button>
+      <label class="field" for="tuning">Tuning
+        <select id="tuning"></select>
+      </label>
+      <button type="button" id="auto" class="mode-toggle" aria-pressed="true">Auto</button>
     </div>
     <div id="strings" class="strings" role="group" aria-label="Guitar strings"></div>
   </section>
 
+  <section id="chromatic-panel" class="panel-block" hidden aria-label="Chromatic pitch classes">
+    <div id="chroma" class="chroma" role="list" aria-label="Pitch classes"></div>
+    <button type="button" id="play-chroma" class="tone wide">Play reference</button>
+  </section>
+
   <button id="start" class="primary" type="button">Start tuner</button>
   <button id="install" class="ghost" type="button" hidden>Install app</button>
-  <p class="hint">Green = in tune, within ±3 cents. Pluck all six strings in a row to celebrate.</p>
+  <p id="hint" class="hint">Green lock is within ±3¢. Pluck all six strings for the sweep.</p>
   <p id="status" class="status" role="status"></p>
   <p id="sr" class="sr-only" aria-live="polite"></p>
 </main>
