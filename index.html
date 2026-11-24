@@ -88,8 +88,33 @@
   <button id="install" class="ghost" type="button" hidden>Install app</button>
   <p id="hint" class="hint">Green lock is within ±3¢. Pluck all six strings for the sweep.</p>
   <p id="status" class="status" role="status"></p>
+  <div class="foot">
+    <button type="button" id="tip" class="tip">Tip the developer</button>
+    <a class="privacy-link" href="privacy.html">Privacy</a>
+  </div>
   <p id="sr" class="sr-only" aria-live="polite"></p>
 </main>
+<div id="mic-disclosure" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mic-disclosure-title">
+  <div class="modal-card">
+    <h2 id="mic-disclosure-title">Microphone</h2>
+    <p id="mic-disclosure-copy">Tuna Tuna uses your microphone only in real time on your device to detect pitch. Audio is never recorded, saved, or sent anywhere.</p>
+    <div class="modal-actions">
+      <button type="button" id="mic-disclosure-cancel" class="ghost">Not now</button>
+      <button type="button" id="mic-disclosure-accept" class="primary" data-autofocus>Continue</button>
+    </div>
+  </div>
+</div>
+<div id="tip-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="tip-title">
+  <div class="modal-card">
+    <h2 id="tip-title">Tip the developer</h2>
+    <p id="tip-copy">Tuna Tuna is 100% free with every feature unlocked. Optional tips go directly to the creator and unlock nothing.</p>
+    <p id="tip-soon" hidden>The tip link is coming soon.</p>
+    <div class="modal-actions">
+      <button type="button" id="tip-close" class="ghost">Close</button>
+      <a id="tip-open" class="primary tip-go" hidden target="_blank" rel="noopener noreferrer">Open tip link</a>
+    </div>
+  </div>
+</div>
 <div id="celebrate" class="celebrate" aria-live="polite">
   <div id="splatters" class="splatters" aria-hidden="true"></div>
   <div class="celebrate-copy">
@@ -97,5 +122,6 @@
     <div id="celebrate-sub" class="celebrate-sub"></div>
   </div>
 </div>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body></html>
