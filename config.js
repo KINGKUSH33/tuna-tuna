@@ -14,5 +14,5 @@
    in sw.js so the service worker drops the previous copy.
 */
 (function (root) {
-  root.TIP_JAR_URL = "";
+  root.TIP_JAR_URL = "https://ko-fi.com/tunatunaapp";
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,5 +1,5 @@
-/* Tuna Tuna v3.1 service worker. New cache name drops anything saved by v3 and earlier. */
-const CACHE = 'tuna-tuna-v3.1';
+/* Tuna Tuna v3.1.1 service worker. New cache name drops anything saved by v3.1 and earlier. */
+const CACHE = 'tuna-tuna-v3.1.1';
 const ASSETS = [
   './',
   'index.html',

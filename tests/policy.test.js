@@ -43,8 +43,8 @@ check('privacy explains the external tip',
 check('privacy links the repo', privacy.includes('https://github.com/KINGKUSH33/tuna-tuna'));
 check('index links privacy.html', /<a class="privacy-link" href="privacy.html">Privacy<\/a>/.test(read('index.html')));
 check('index has the tip control', read('index.html').includes('>Tip the developer<'));
-check('service worker caches v3.1, privacy, and config',
-  read('sw.js').includes("'tuna-tuna-v3.1'") && read('sw.js').includes('privacy.html') && read('sw.js').includes('config.js'));
+check('service worker caches v3.1.1, privacy, and config',
+  read('sw.js').includes("'tuna-tuna-v3.1.1'") && read('sw.js').includes('privacy.html') && read('sw.js').includes('config.js'));
 
 function audioStub() {
   return class AudioContext {
@@ -185,7 +185,7 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
     loose.calls[1].audio.noiseSuppression.ideal === false &&
     loose.calls[1].audio.autoGainControl.ideal === false);
 
-  const emptyTip = loadApp();
+  const emptyTip = loadApp({ tipUrl: '' });
   emptyTip.document.getElementById('tip').click();
   const soon = emptyTip.document.getElementById('tip-soon');
   const tipOpen = emptyTip.document.getElementById('tip-open');
